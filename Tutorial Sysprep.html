@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preparação de ISO Windows com Sysprep</title>
+
+<style>
+    *{
+        margin:0;
+        padding:0;
+        box-sizing:border-box;
+    }
+
+    body{
+        font-family: "Segoe UI", Arial, sans-serif;
+        background:#f4f6f9;
+        color:#333;
+        line-height:1.7;
+    }
+
+    .container{
+        max-width:1200px;
+        margin:auto;
+        padding:40px 20px;
+    }
+
+    .header{
+        background:linear-gradient(135deg,#0078d4,#005a9e);
+        color:white;
+        padding:40px;
+        border-radius:12px;
+        margin-bottom:30px;
+        box-shadow:0 3px 10px rgba(0,0,0,.15);
+    }
+
+    .header h1{
+        margin-bottom:10px;
+    }
+
+    .card{
+        background:white;
+        padding:25px;
+        margin-bottom:20px;
+        border-radius:12px;
+        box-shadow:0 2px 8px rgba(0,0,0,.08);
+    }
+
+    h2{
+        color:#005a9e;
+        margin-bottom:15px;
+        border-bottom:2px solid #eaeaea;
+        padding-bottom:10px;
+    }
+
+    ol{
+        padding-left:25px;
+    }
+
+    li{
+        margin-bottom:12px;
+    }
+
+    code{
+        background:#272822;
+        color:#f8f8f2;
+        padding:2px 6px;
+        border-radius:4px;
+    }
+
+    pre{
+        background:#272822;
+        color:#f8f8f2;
+        padding:15px;
+        border-radius:8px;
+        overflow:auto;
+        margin-top:10px;
+    }
+
+    .warning{
+        background:#fff3cd;
+        border-left:5px solid #ffc107;
+        padding:15px;
+        margin-top:15px;
+        border-radius:6px;
+    }
+
+    .success{
+        background:#d1e7dd;
+        border-left:5px solid #198754;
+        padding:15px;
+        margin-top:15px;
+        border-radius:6px;
+    }
+
+    .info{
+        background:#e7f3ff;
+        border-left:5px solid #0d6efd;
+        padding:15px;
+        border-radius:6px;
+        margin-top:15px;
+    }
+
+    footer{
+        text-align:center;
+        margin-top:40px;
+        color:#666;
+    }
+	.code-toggle {
+    margin-top: 15px;
+	}
+
+	.code-toggle summary {
+		cursor: pointer;
+		background: #005a9e;
+		color: white;
+		padding: 12px 16px;
+		border-radius: 8px;
+		font-weight: 600;
+		user-select: none;
+		transition: 0.2s;
+	}
+
+	.code-toggle summary:hover {
+		background: #0078d4;
+	}
+
+	.code-toggle[open] summary {
+		border-radius: 8px 8px 0 0;
+	}
+
+	.code-toggle pre {
+		margin-top: 0;
+		border-radius: 0 0 8px 8px;
+	}
+
+	.code-toggle summary::marker {
+		color: white;
+	}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>Preparação de ISO Customizada do Windows com Sysprep</h1>
+        <p>Guia completo para criação de uma imagem personalizada do Windows utilizando Sysprep, DISM e Windows ADK.</p>
+    </div>
+
+    <div class="card">
+        <h2>Objetivo</h2>
+        <p>
+            Este procedimento permite personalizar uma instalação do Windows,
+            capturar a imagem utilizando o DISM e gerar uma nova ISO bootável
+            contendo todas as customizações realizadas.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>1. Entrar em Modo Auditoria</h2>
+
+        <ol>
+            <li>
+                Inicie a instalação do Windows normalmente.
+            </li>
+
+            <li>
+                Após a cópia dos arquivos de instalação para o disco, quando aparecer
+                a tela de seleção de idioma e região, pressione:
+                <br><br>
+                <code>CTRL + SHIFT + F3</code>
+            </li>
+
+            <li>
+                O Windows reiniciará automaticamente e entrará no
+                <strong>Modo Auditoria (Audit Mode)</strong>.
+            </li>
+        </ol>
+
+        <div class="info">
+            Caso precise retornar ao modo auditoria posteriormente:
+            <pre>C:\Windows\System32\Sysprep\sysprep.exe /audit /reboot</pre>
+        </div>
+
+    </div>
+
+    <div class="card">
+        <h2>2. Personalizar o Windows</h2>
+
+        <ol>
+            <li>Instale aplicações necessárias.</li>
+            <li>Configure políticas, atalhos e personalizações desejadas.</li>
+            <li>Realize atualizações do Windows.</li>
+            <li>Remova softwares que não farão parte da imagem final.</li>
+            <li>Crie uma nova partição com aproximadamente <strong>60 GB</strong>.</li>
+            <li>Crie a pasta <code>D:\iso</code> (ou letra equivalente).</li>
+            <li>Copie todo o conteúdo da ISO original do Windows para essa pasta.</li>
+            <li>Não copie o arquivo <code>sources\install.wim</code>.</li>
+        </ol>
+
+    </div>
+
+    <div class="card">
+        <h2>3. Criar o arquivo unattend.xml</h2>
+
+        <p>Salve o arquivo de resposta automática em:</p>
+
+        <pre>C:\Windows\System32\Sysprep\unattend.xml</pre>
+
+        <p>
+            Esse arquivo será utilizado pelo Sysprep para automatizar o processo de generalização.
+        </p>
+    </div>
+	
+	<div class="card">
+    <h2>Conteúdo do arquivo unattend.xml</h2>
+
+    <p>
+        Crie o arquivo abaixo em:
+    </p>
+
+    <pre>C:\Windows\System32\Sysprep\unattend.xml</pre>
+
+    <p>
+        Este arquivo automatiza a configuração inicial do Windows após a execução do Sysprep,
+        definindo idioma, fuso horário, criação de usuário administrador local e logon automático.
+    </p>
+	
+	<details class="code-toggle">
+		<summary>📄 Clique para expandir ou recolher o arquivo unattend.xml</summary>
+
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;unattend xmlns="urn:schemas-microsoft-com:unattend"&gt;
+
+    &lt;settings pass="oobeSystem"&gt;
+
+        &lt;component name="Microsoft-Windows-International-Core"
+                   processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35"
+                   language="neutral"
+                   versionScope="nonSxS"&gt;
+
+            &lt;InputLocale&gt;pt-BR&lt;/InputLocale&gt;
+            &lt;SystemLocale&gt;pt-BR&lt;/SystemLocale&gt;
+            &lt;UILanguage&gt;pt-BR&lt;/UILanguage&gt;
+            &lt;UserLocale&gt;pt-BR&lt;/UserLocale&gt;
+
+        &lt;/component&gt;
+
+        &lt;component name="Microsoft-Windows-Shell-Setup"
+                   processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35"
+                   language="neutral"
+                   versionScope="nonSxS"&gt;
+
+            &lt;TimeZone&gt;E. South America Standard Time&lt;/TimeZone&gt;
+
+            &lt;OOBE&gt;
+                &lt;HideEULAPage&gt;true&lt;/HideEULAPage&gt;
+                &lt;HideOnlineAccountScreens&gt;true&lt;/HideOnlineAccountScreens&gt;
+                &lt;HideWirelessSetupInOOBE&gt;true&lt;/HideWirelessSetupInOOBE&gt;
+                &lt;HideLocalAccountScreen&gt;true&lt;/HideLocalAccountScreen&gt;
+                &lt;ProtectYourPC&gt;3&lt;/ProtectYourPC&gt;
+            &lt;/OOBE&gt;
+
+            &lt;UserAccounts&gt;
+                &lt;LocalAccounts&gt;
+
+                    &lt;LocalAccount wcm:action="add"
+                        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"&gt;
+
+                        &lt;Name&gt;Admin&lt;/Name&gt;
+                        &lt;DisplayName&gt;Admin&lt;/DisplayName&gt;
+                        &lt;Group&gt;Administrators&lt;/Group&gt;
+
+                        &lt;Password&gt;
+                            &lt;Value&gt;xenha&lt;/Value&gt;
+                            &lt;PlainText&gt;true&lt;/PlainText&gt;
+                        &lt;/Password&gt;
+
+                    &lt;/LocalAccount&gt;
+
+                &lt;/LocalAccounts&gt;
+            &lt;/UserAccounts&gt;
+
+            &lt;AutoLogon&gt;
+                &lt;Enabled&gt;true&lt;/Enabled&gt;
+                &lt;Username&gt;Admin&lt;/Username&gt;
+                &lt;LogonCount&gt;1&lt;/LogonCount&gt;
+
+                &lt;Password&gt;
+                    &lt;Value&gt;xenha&lt;/Value&gt;
+                    &lt;PlainText&gt;true&lt;/PlainText&gt;
+                &lt;/Password&gt;
+
+            &lt;/AutoLogon&gt;
+
+        &lt;/component&gt;
+
+    &lt;/settings&gt;
+
+&lt;/unattend&gt;
+</pre>
+
+    </details>
+	
+	<div class="warning">
+        <strong>Importante:</strong> altere o valor
+        <code>xenha</code> para uma senha segura antes de gerar a imagem.
+        Como o parâmetro <code>PlainText=true</code> está habilitado,
+        a senha ficará visível dentro do arquivo XML.
+    </div>
+
+    <div class="info">
+        <strong>O que este arquivo faz:</strong>
+        <ul style="margin-top:10px;padding-left:20px;">
+            <li>Define idioma do sistema como Português (Brasil).</li>
+            <li>Configura teclado pt-BR.</li>
+            <li>Define o fuso horário "E. South America Standard Time".</li>
+            <li>Oculta telas desnecessárias do OOBE.</li>
+            <li>Evita solicitação de conta Microsoft durante a configuração inicial.</li>
+            <li>Cria automaticamente o usuário local <strong>Admin</strong>.</li>
+            <li>Adiciona o usuário ao grupo Administradores.</li>
+            <li>Realiza um logon automático após a instalação.</li>
+        </ul>
+    </div>
+
+</div>
+
+    <div class="card">
+        <h2>4. Limpeza do Sistema Antes do Sysprep</h2>
+
+        <p>Execute os comandos abaixo em Prompt de Comando como Administrador:</p>
+
+<pre>
+cleanmgr
+
+Dism.exe /Online /Cleanup-Image /StartComponentCleanup /ResetBase
+
+del /s /q %temp%\*
+
+net stop wuauserv
+net start wuauserv
+
+rd /s /q C:\Windows\SoftwareDistribution\Download
+</pre>
+
+        <div class="warning">
+            Recomenda-se reiniciar o computador após a limpeza para garantir que
+            não existam arquivos pendentes.
+        </div>
+
+    </div>
+
+    <div class="card">
+        <h2>5. Executar o Sysprep</h2>
+
+        <p>Copie o arquivo unattend.xml para a pasta do Sysprep caso ainda não esteja lá.</p>
+
+        <p>Execute:</p>
+
+<pre>
+C:\Windows\System32\Sysprep\sysprep.exe /generalize /oobe /shutdown /unattend:C:\Windows\System32\Sysprep\unattend.xml
+</pre>
+
+        <p>
+            Alternativamente, execute <code>sysprep</code> pela caixa Executar,
+            marque a opção <strong>Generalizar</strong> e escolha
+            <strong>Desligar</strong>.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>6. Capturar a Imagem do Windows</h2>
+
+        <ol>
+            <li>Inicialize pelo pendrive de instalação do Windows.</li>
+            <li>Na primeira tela pressione:</li>
+        </ol>
+
+        <pre>SHIFT + F10</pre>
+
+        <p>Execute:</p>
+
+<pre>
+diskpart
+list vol
+</pre>
+
+        <p>
+            Verifique se todas as partições possuem letra de unidade.
+            Caso seja necessário:
+        </p>
+
+<pre>
+select vol 1
+assign letter=D
+exit
+</pre>
+
+        <p>Capture a imagem:</p>
+
+<pre>
+dism /capture-image /imagefile:D:\install.wim /capturedir:C:\ /name:"Win11Custom"
+</pre>
+
+        <div class="info">
+            Ajuste as letras das unidades conforme o ambiente utilizado.
+        </div>
+
+    </div>
+
+    <div class="card">
+        <h2>7. Inserir o install.wim na Estrutura da ISO</h2>
+
+        <ol>
+            <li>Reinicie o computador.</li>
+            <li>Entre novamente no modo auditoria usando:</li>
+        </ol>
+
+        <pre>CTRL + SHIFT + F3</pre>
+
+        <ol start="3">
+            <li>
+                Mova o arquivo capturado para:
+                <pre>D:\iso\sources\install.wim</pre>
+            </li>
+        </ol>
+
+    </div>
+
+    <div class="card">
+        <h2>8. Instalar o Windows ADK</h2>
+
+        <ol>
+            <li>Baixe e instale o Windows ADK.</li>
+            <li>
+                Durante a instalação marque apenas:
+                <strong>Ferramentas de Implantação</strong>.
+            </li>
+        </ol>
+    </div>
+
+    <div class="card">
+        <h2>9. Gerar a ISO Customizada</h2>
+
+        <ol>
+            <li>
+                Execute como Administrador:
+                <strong>Ambiente de Ferramentas de Implantação e Geração de Imagens</strong>
+            </li>
+        </ol>
+
+<pre>
+oscdimg -u2 -udfver102 -m -o -bootdata:2#p0,e,bD:\iso\boot\etfsboot.com#pEF,e,bD:\iso\efi\microsoft\boot\efisys.bin D:\iso D:\WinCustom.iso
+</pre>
+
+        <p>
+            Ajuste as letras de unidade caso necessário.
+        </p>
+
+        <div class="success">
+            Ao final do processo será criado o arquivo:
+            <strong>D:\WinCustom.iso</strong>
+        </div>
+
+    </div>
+
+    <div class="card">
+        <h2>Solução de Problemas</h2>
+
+        <h3>Erro do Language Experience Pack durante o Sysprep</h3>
+
+        <p>Erro:</p>
+
+<pre>
+SYSPRP Package Microsoft.LanguageExperiencePackpt-BR...
+was installed for a user, but not provisioned for all users.
+</pre>
+
+        <p>Abra o PowerShell como Administrador e execute:</p>
+
+<pre>
+Get-AppxProvisionedPackage -Online |
+Where-Object DisplayName -like "*LanguageExperiencePackpt-BR*" |
+Remove-AppxProvisionedPackage -Online
+
+Get-AppxPackage -AllUsers -Name "*LanguageExperiencePackpt-BR*" |
+Remove-AppxPackage -AllUsers
+</pre>
+
+        <p>
+            Após remover o pacote, reinicie o computador e execute o Sysprep novamente.
+        </p>
+
+    </div>
+
+    <div class="card">
+        <h2>Resumo dos Principais Comandos</h2>
+
+<pre>
+Modo Auditoria:
+CTRL + SHIFT + F3
+
+Capturar imagem:
+dism /capture-image /imagefile:D:\install.wim /capturedir:C:\ /name:"Win11Custom"
+
+Executar Sysprep:
+C:\Windows\System32\Sysprep\sysprep.exe /generalize /oobe /shutdown /unattend:C:\Windows\System32\Sysprep\unattend.xml
+
+Retornar ao Modo Auditoria:
+C:\Windows\System32\Sysprep\sysprep.exe /audit /reboot
+
+Criar ISO:
+oscdimg -u2 -udfver102 -m -o -bootdata:2#p0,e,bD:\iso\boot\etfsboot.com#pEF,e,bD:\iso\efi\microsoft\boot\efisys.bin D:\iso D:\WinCustom.iso
+</pre>
+
+    </div>
+
+    <footer>
+        Tutorial de Preparação de ISO Windows com Sysprep • Windows 10 e Windows 11
+    </footer>
+
+</div>
+
+</body>
+</html>
